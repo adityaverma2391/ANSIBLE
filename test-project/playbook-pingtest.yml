@@ -1,3 +1,6 @@
 -
-  name: PING TEST
-  hosts: 
+  name: Test Connectivity of Target Servers
+  hosts: all
+  tasks:
+    - name: PING TEST
+      ping:
