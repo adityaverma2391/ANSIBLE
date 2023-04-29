@@ -18,6 +18,8 @@
         create: true
 
     - name: 'Create a new user'
+      group:
+        name: 'developers'
       user:
         name: 'web_user'
         uid: 1040
