@@ -1,0 +1,26 @@
+---
+- name: Disable root switching for users but allow sudo command execution
+  hosts: all
+  become: true
+  tasks:
+    - name: Ensure sudoers.d configuration for each user is correct
+      lineinfile:
+        path: "/etc/sudoers.d/{{ item }}"
+        regexp: '^.*ALL\s+=\s+NOPASSWD:'
+        state: absent
+      with_fileglob:
+        - /etc/sudoers.d/*
+      notify:
+        - Reload sudoers
+
+    - name: Disallow switching to root for users via su
+      lineinfile:
+        path: "/etc/sudoers.d/{{ item | basename }}"
+        regexp: '^[^#]*ALL\s+=\s+\(ALL\)\s+NOPASSWD:\s+ALL'
+        line: "{{ item | basename }} ALL=(ALL) NOPASSWD: ALL, !/bin/su, !/usr/bin/su"
+      with_fileglob:
+        - /etc/sudoers.d/*
+
+  handlers:
+    - name: Reload sudoers
+      command: sudo visudo -c
