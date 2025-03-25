@@ -1,0 +1,32 @@
+---
+- name: Rollback changes to allow sudo su and restore sudo permissions
+  hosts: all
+  become: true
+  tasks:
+    - name: Remove restrictions on su command
+      lineinfile:
+        path: "/etc/sudoers.d/{{ item | basename }}"
+        regexp: '^[^#]*ALL\s+=\s+\(ALL\)\s+NOPASSWD:\s+ALL,\s*!/bin/su,\s*!/usr/bin/su'
+        state: absent
+      with_fileglob:
+        - /etc/sudoers.d/*
+
+    - name: Allow vagrant user to execute sudo su again
+      lineinfile:
+        path: "/etc/sudoers.d/vagrant"
+        regexp: '^vagrant'
+        line: 'vagrant ALL=(ALL) NOPASSWD: ALL'
+      # Ensure the line allows vagrant user to run all commands, including su
+      when: ansible_facts.os_family == "Debian"
+
+    - name: Restore sudoers.d to allow sudo su for users
+      lineinfile:
+        path: "/etc/sudoers.d/{{ item | basename }}"
+        regexp: '^.*ALL\s+=\s+\(ALL\)\s+NOPASSWD:\s+ALL'
+        line: "{{ item | basename }} ALL=(ALL) NOPASSWD: ALL"
+      with_fileglob:
+        - /etc/sudoers.d/*
+
+  handlers:
+    - name: Reload sudoers
+      command: sudo visudo -c
